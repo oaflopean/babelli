@@ -1,0 +1,28 @@
+<!-- extend base layout -->
+{% extends "form.html" %}
+{% block search_result %}
+
+	<link rel="stylesheet" type="text/css" href="/static/css/page.css">
+<br><br>
+
+<p> <b>{{result.bookid}}</b></p>
+<p>{{result.title}}</p>
+<p>{{result.author}}</p>
+    <pre><p><b>{{subject}}</b></p></pre>
+
+<ul>
+
+            <li><a href="{{result.textlink}}" target="_blank">Text Format</a></li>
+            <li><a href="{{result.epublink}} " target="_blank">EBook Format</a></li>
+        </ul>
+<div class="limiter">
+		<div class="container-table100">
+			<div class="wrap-table100">
+    <article>
+        <h1>{{result.title}} by <i>{{result.author}}</i></h1>
+         </article></div>
+    <a href="http://www.gutenberg.org/etext/{{result.bookid}}" target="_blank">Visit book's Gutenberg page</a>
+            <p><iframe src="http://www.copypastapublishing.com/gutenberg-app/pgdvd042010/etext/{{result.bookid}}.html" height="1000" width="1000">Failed to load extra content</iframe></p>
+       <br><p>Note: Extra content on this page may not be available until we upgrade to a dedicated host server. Sorry about that.</p></div></div></div>
+
+{% endblock %}
