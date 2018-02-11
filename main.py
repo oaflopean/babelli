@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 from flask import render_template, flash, redirect, session, url_for, request, g
+from flask import jsonify
 #from flask_login import login_user, logout_user, current_user, login_required
 from datetime import datetime
 import json
@@ -18,6 +19,10 @@ class Book(object):
         self.bookid = bookid
         self.textlink= textlink
         self.epublink = epublink
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__,
+                          sort_keys=True, indent=4)
 
 @app.route('/')
 @app.route('/index')
@@ -119,7 +124,7 @@ def page(bookid):
     return render_template('page_render.html', subject=subject, result=result, data=data)
 
 
-@app.route('/search_results/<query>')
+@app.route('/search_results/<query>', methods=["GET"])
 def search_results(query):
     gutenberg = json.load(open('gutenberg'))
     ids = json.load(open('ids'))
@@ -185,13 +190,74 @@ def search_results(query):
     results=list(RESULTS)
     return render_template('main.html', query=query, results=results)
 
-""" {% {{titles}}[{{title}}] = {{id}}%}
-                {% id.split = formula %}
-                {% len(formula) = my_list_len   %}
-                {% linkTxt= "ftp://ftp.copypastapublishing.com/gutenberg/" %}
-                {% for h in range(0, {{my_list_len}} - 1): %}
-                {%    linkTxt = linkTxt + formula[h] + "/" %}
-                (% endfor %}
-                (% {{text}}= linkTxt + id +"/" %}
-                (% {{epub}}=linkTxt+"cache/epub/"+id+"/" %}
-"""
+@app.route('/appsearch/<query>', methods=["GET"])
+def appsearch(query):
+    gutenberg = json.load(open('gutenberg'))
+    ids = json.load(open('ids'))
+    authors = json.load(open('authors2'))
+    results = []
+    jsonList={"book":[]}
+    tokens = query.lower().split(" ")
+    IDresults = []
+    previous=[]
+    if len(tokens)>1:
+        for g in tokens:
+
+            Ids=[]
+            try:
+                Ids = gutenberg[g]
+            except KeyError:
+                continue
+            if IDresults==[]:
+                IDresults.extend(Ids)
+
+            try:
+                IDresults = set(Ids).intersection(previous)
+                if len(IDresults )> 500:
+                    break
+            except TypeError:
+                continue
+            previous=Ids
+    else:
+        try:
+            IDresults = gutenberg[tokens[0]]
+        except KeyError:
+            IDresults=[]
+
+    Ids=[]
+    for q in IDresults:
+        try:
+            try:
+                title = ids.get(str(q))
+            except KeyError:
+                title="none"
+            try:
+                author = authors.get(str(q))
+            except KeyError:
+                author="none"
+            bookid=str(q)
+            book =Book(title, author, bookid,"","")
+            baseLink = "ftp://anonymous@copypastapublishing.com:password@ftp.copypastapublishing.com/gutenberg/"
+            epub = baseLink + "cache/epub/" + str(bookid)+ "/"
+            linkTxt=baseLink
+            formula=list(bookid)
+            my_list_len=len(formula)
+            for h in range(0, my_list_len - 1):
+                linkTxt = linkTxt + "/"+formula[h]+"/"
+            linkTxt = linkTxt + bookid
+            book.textlink = linkTxt
+            book.epublink=epub
+            results.append(book)
+            jsonList=json.dumps([ob.__dict__ for ob in results])
+
+
+        except ValueError:
+            continue
+    response = app.response_class(
+        response=jsonList,
+        status=200,
+        mimetype='application/json')
+    list1={"title":"book"}
+    RESULTS=set(results)
+    results=list(RESULTS)
+    return response
